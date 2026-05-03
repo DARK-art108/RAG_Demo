@@ -1,13 +1,13 @@
 # RAG Demo
 
-A small **retrieval-augmented generation (RAG)** demo using [LangChain](https://python.langchain.com/), [ChromaDB](https://www.trychroma.com/), [FastAPI](https://fastapi.tiangolo.com/), and [sentence-transformers](https://www.sbert.net/) embeddings. Policy-style Markdown lives under `data/knowledge_base/`; the API can build a persisted vector store you can later wire to a query/LLM flow.
+A small **retrieval-augmented generation (RAG)** demo using [LangChain](https://python.langchain.com/), [ChromaDB](https://www.trychroma.com/), [FastAPI](https://fastapi.tiangolo.com/), and [sentence-transformers](https://www.sbert.net/) embeddings. Policy-style Markdown under `data/knowledge_base/` is chunked, embedded, and written to a local Chroma store under `data/chroma/` via the API. Groq-backed generation can be wired in next using settings from `config.py`.
 
-**Upstream repo:** [https://github.com/DARK-art108/RAG_Demo](https://github.com/DARK-art108/RAG_Demo)
+**Repository:** [github.com/DARK-art108/RAG_Demo](https://github.com/DARK-art108/RAG_Demo)
 
 ## Requirements
 
-- Python **3.12+**
-- [uv](https://docs.astral.sh/uv/) (recommended) or another tool that respects `pyproject.toml` / `uv.lock`
+- Python **3.12+** (see `.python-version`)
+- [uv](https://docs.astral.sh/uv/) — use `uv sync` so `uv.lock` stays the source of truth
 
 ## Quick start
 
@@ -16,55 +16,68 @@ git clone https://github.com/DARK-art108/RAG_Demo.git
 cd RAG_Demo
 uv sync
 cp .env.example .env
-# Edit .env and set GROQ_API_KEY (and optional GROQ_MODEL) for later LLM steps.
+# Set GROQ_API_KEY (and optional GROQ_MODEL) when you add chat/query endpoints.
 ```
 
-Run the API (default **http** port **8000**):
+Start the API (plain **HTTP**, default port **8000**):
 
 ```bash
 uv run python main.py
 ```
 
-- **Swagger UI:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)  
-- **ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)  
+| URL | Purpose |
+|-----|---------|
+| [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) | Swagger UI (“Try it out”) |
+| [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc) | ReDoc |
+| [http://127.0.0.1:8000/openapi.json](http://127.0.0.1:8000/openapi.json) | OpenAPI schema |
 
-Use **`http://`**, not `https://`, for local Uvicorn.
-
-Override port:
+Use **`http://`**, not **`https://`**, for local Uvicorn.
 
 ```bash
-PORT=9000 uv run python main.py
+PORT=9000 uv run python main.py   # custom port
 ```
 
 ## API
 
 | Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/healthz` | Liveness check |
-| `POST` | `/index_events` | Load Markdown from `data/knowledge_base/`, chunk, embed, persist to Chroma under `data/chroma/` |
+|--------|------|---------------|
+| `GET` | `/healthz` | Liveness: `{"status":"ok"}` |
+| `POST` | `/index_events` | Reads `data/knowledge_base/*.md`, splits with `RecursiveCharacterTextSplitter`, embeds with `HuggingFaceEmbeddings`, adds documents to Chroma at `settings.persist_dir` |
 
-Configuration (paths, model names, Groq settings) is in `src/rag_demo/config.py` and can be influenced by environment variables (see `.env.example`).
+Paths, collection name, embedding model id, and Groq defaults live in **`src/rag_demo/config.py`** (overridable via env; see **`.env.example`**).
 
 ## Project layout
 
 ```
-├── main.py              # Dev entrypoint: sets PYTHONPATH for src layout, runs Uvicorn
-├── pyproject.toml       # Dependencies and setuptools src layout (package under src/)
-├── src/rag_demo/        # Application package
-│   ├── api.py           # FastAPI app
-│   ├── config.py        # Settings
-│   ├── loader.py        # Markdown loading
-│   └── indexer.py       # Split, embed, Chroma persist
-├── data/knowledge_base/ # Sample .md sources for indexing
-└── notebooks/           # Optional experiments
+├── main.py                 # Prepends src/ to sys.path + PYTHONPATH; runs Uvicorn reload
+├── pyproject.toml          # Dependencies; setuptools package-dir = src
+├── uv.lock
+├── CLAUDE.md               # Notes for AI assistants (Claude Code, etc.)
+├── src/rag_demo/
+│   ├── api.py              # FastAPI app + OpenAPI metadata
+│   ├── config.py           # Pydantic Settings + dotenv
+│   ├── loader.py           # Markdown → LangChain Documents
+│   ├── indexer.py          # build_vectorstore(): split, embed, Chroma
+│   ├── retriever.py        # Reserved for retrieval helpers
+│   ├── generator.py        # Reserved for LLM / Groq generation
+│   └── pipeline.py         # Reserved for end-to-end RAG orchestration
+├── data/knowledge_base/    # Sample *.md corpora
+└── notebooks/              # Optional experiments
 ```
 
-## Development notes
+## Development
 
-- Install in editable mode (optional): `uv pip install -e .` from the repo root.
-- If you run `uvicorn rag_demo.api:app` directly, set `PYTHONPATH=src` or install the package so `rag_demo` resolves.
-- Generated Chroma files under `data/chroma/` are ignored by git (see `.gitignore`).
+- **Editable install (optional):** `uv pip install -e .`
+- **CLI uvicorn without `main.py`:** `PYTHONPATH=src uvicorn rag_demo.api:app --reload --host 0.0.0.0 --port 8000`
+- **Gitignored:** `.venv/`, `.env`, `data/chroma/` (generated index)
+- **Dev dependencies:** `uv sync --extra dev` (Jupyter, ipykernel)
+
+## Troubleshooting
+
+- **`ModuleNotFoundError: rag_demo`** — Run from repo root with `uv run python main.py`, or set `PYTHONPATH=src`, or `uv pip install -e .`.
+- **Browser “invalid HTTP response”** — Use `http://` only; avoid another process bound to the same port (`lsof -i :8000`).
+- **First `/index_events` is slow** — sentence-transformers and Chroma warm-up; subsequent calls are faster.
 
 ## License
 
-Add a `LICENSE` file if you intend to open-source this repo under specific terms.
+Add a `LICENSE` file when you choose a license for this project.

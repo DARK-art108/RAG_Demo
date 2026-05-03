@@ -9,12 +9,14 @@ def load_md_documents(source_dir: Path) -> list[Document]:
             content = path.read_text(encoding="utf-8")
             docs.append(
                 Document(
-                    page_content = content,
-                    metadata = {"source": str(path), 
-                    "doc_type":"policy", 
-                    "doc_name":path.stem}         
-                        )
+                    page_content=content,
+                    metadata={
+                        "source": str(path),
+                        "doc_type": "policy",
+                        "doc_name": path.stem,
+                    },
                 )
-            return docs
+            )
+        return docs
     except Exception as e:
         raise ValueError(f"Error loading documents: {e}")
