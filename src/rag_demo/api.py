@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
 from rag_demo.indexer import build_vectorstore
 
 app = FastAPI(
