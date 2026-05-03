@@ -1,0 +1,39 @@
+[project]
+name = "rag-demo"
+version = "0.1.0"
+authors = [
+    { name = "Ritesh Yadav", email = "ritesh.yadav@gmail.com" }
+]
+description = "This is the demo on RAG with LangChain and ChromaDB"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chromadb>=0.5.5",
+    "fastapi>=0.115.0",
+    "langchain>=0.3.0",
+    "langchain-chroma>=0.1.2",
+    "langchain-community>=0.3.0",
+    "langchain-groq>=0.2.0",
+    "langchain-huggingface>=0.1.0",
+    "langchain-text-splitters>=0.3.0",
+    "pydantic>=2.9.0",
+    "python-dotenv>=1.0.1",
+    "sentence-transformers>=3.1.0",
+    "uvicorn>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel>=6.29.0",
+    "jupyter>=1.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
