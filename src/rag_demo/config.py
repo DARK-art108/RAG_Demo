@@ -20,7 +20,7 @@ class Settings(BaseModel):
     rerank_top_k: int = Field(default=3)
     groq_api_key: str | None = Field(default_factory=_read_groq_api_key)
     groq_model: str = Field(
-        default_factory=lambda: os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        default_factory=lambda: os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     )
 
 
