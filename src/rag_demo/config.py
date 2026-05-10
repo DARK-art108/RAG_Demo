@@ -22,6 +22,7 @@ class Settings(BaseModel):
     groq_model: str = Field(
         default_factory=lambda: os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     )
+    log_level: str = Field(default="INFO")
 
 
 settings = Settings()
