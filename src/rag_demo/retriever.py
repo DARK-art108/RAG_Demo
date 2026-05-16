@@ -69,7 +69,6 @@ def hybrid_retrieval(query:str) -> list[Document]:
     for doc in docs:
             key = f"{doc.metadata.get('source', '')}:{hash(doc.page_content)}"
             merged[key] = doc
-
     unique_docs = list(merged.values())
     logger.info(f"Unique documents: {unique_docs}")
 
